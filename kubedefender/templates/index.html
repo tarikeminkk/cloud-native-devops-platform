@@ -3,35 +3,121 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KubeDefender</title>
+    <title>KubeDefender // Arena</title>
     <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
 
-<div class="game-container">
-    <div class="header">
-        <h1>KUBEDEFENDER</h1>
+<div class="background-glow"></div>
 
-        <div class="stats">
-            <span>HEALTH: <b id="health">100</b></span>
-            <span>SCORE: <b id="score">0</b></span>
+<main class="game-shell">
+
+    <header class="topbar">
+        <div>
+            <div class="eyebrow">KUBEOPS // COMBAT SIMULATION</div>
+            <h1>KUBE<span>DEFENDER</span></h1>
         </div>
+
+        <div class="wave-box">
+            <small>CURRENT WAVE</small>
+            <strong id="wave">01</strong>
+        </div>
+    </header>
+
+    <section class="hud">
+        <div class="hud-block health-block">
+            <div class="hud-label">
+                <span>OPERATOR INTEGRITY</span>
+                <b id="healthText">100%</b>
+            </div>
+
+            <div class="bar">
+                <div id="healthBar" class="bar-fill"></div>
+            </div>
+        </div>
+
+        <div class="hud-center">
+            <div>
+                <small>SCORE</small>
+                <strong id="score">000000</strong>
+            </div>
+
+            <div>
+                <small>KILLS</small>
+                <strong id="kills">0</strong>
+            </div>
+
+            <div>
+                <small>COMBO</small>
+                <strong id="combo">x1</strong>
+            </div>
+        </div>
+
+        <div class="ammo-box">
+            <small>VX-7 RIFLE</small>
+            <div>
+                <strong id="ammo">30</strong>
+                <span>/ 30</span>
+            </div>
+            <small id="reloadStatus">READY</small>
+        </div>
+    </section>
+
+    <div class="arena-frame">
+
+        <canvas id="gameCanvas" width="1200" height="675"></canvas>
+
+        <div class="scanlines"></div>
+        <div id="damageOverlay" class="damage-overlay"></div>
+
+        <div id="startScreen" class="overlay">
+            <div class="panel">
+                <div class="panel-tag">TACTICAL SYSTEM ONLINE</div>
+                <h2>KUBEDEFENDER</h2>
+                <p>
+                    Defend the cluster. Survive incoming waves.
+                </p>
+
+                <div class="control-grid">
+                    <div><kbd>W A S D</kbd><span>MOVE</span></div>
+                    <div><kbd>MOUSE</kbd><span>AIM</span></div>
+                    <div><kbd>LMB</kbd><span>FIRE</span></div>
+                    <div><kbd>R</kbd><span>RELOAD</span></div>
+                </div>
+
+                <button id="startButton">INITIALIZE MISSION</button>
+            </div>
+        </div>
+
+        <div id="waveAnnouncement" class="wave-announcement hidden">
+            <small>INCOMING</small>
+            <strong id="waveAnnouncementText">WAVE 01</strong>
+        </div>
+
+        <div id="gameOver" class="overlay hidden">
+            <div class="panel danger">
+                <div class="panel-tag">CONNECTION TERMINATED</div>
+                <h2>OPERATOR DOWN</h2>
+
+                <div class="result">
+                    <span>FINAL SCORE</span>
+                    <strong id="finalScore">0</strong>
+                </div>
+
+                <button id="restartButton">REDEPLOY</button>
+            </div>
+        </div>
+
     </div>
 
-    <canvas id="gameCanvas" width="1000" height="600"></canvas>
+    <footer>
+        <span>CLUSTER: KUBEOPS-01</span>
+        <span id="statusText">SYSTEM READY</span>
+        <span>BUILD // V2</span>
+    </footer>
 
-    <div class="controls">
-        WASD — Move &nbsp; | &nbsp; Mouse — Aim &nbsp; | &nbsp; Left Click — Fire
-    </div>
-</div>
-
-<div id="gameOver" class="game-over hidden">
-    <h2>GAME OVER</h2>
-    <p>Score: <span id="finalScore">0</span></p>
-    <button onclick="location.reload()">PLAY AGAIN</button>
-</div>
+</main>
 
 <script src="/static/game.js"></script>
-
 </body>
 </html>
