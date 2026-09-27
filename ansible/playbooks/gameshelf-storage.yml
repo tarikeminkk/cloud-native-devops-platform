@@ -1,0 +1,13 @@
+---
+- name: Prepare GameShelf PostgreSQL storage
+  hosts: tarik-k8s-wrk01
+  become: true
+
+  tasks:
+    - name: Create PostgreSQL data directory
+      ansible.builtin.file:
+        path: /var/lib/gameshelf-postgres
+        state: directory
+        owner: root
+        group: root
+        mode: '0777'

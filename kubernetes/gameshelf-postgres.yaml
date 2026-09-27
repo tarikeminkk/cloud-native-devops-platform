@@ -1,0 +1,59 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: gameshelf-postgres-secret
+type: Opaque
+stringData:
+  POSTGRES_DB: gameshelf
+  POSTGRES_USER: gameshelf
+  POSTGRES_PASSWORD: gameshelf-lab-2026
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: gameshelf-postgres
+spec:
+  selector:
+    app: gameshelf-postgres
+  ports:
+    - port: 5432
+      targetPort: 5432
+
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: gameshelf-postgres
+spec:
+  serviceName: gameshelf-postgres
+  replicas: 1
+
+  selector:
+    matchLabels:
+      app: gameshelf-postgres
+
+  template:
+    metadata:
+      labels:
+        app: gameshelf-postgres
+
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:17
+          ports:
+            - containerPort: 5432
+
+          envFrom:
+            - secretRef:
+                name: gameshelf-postgres-secret
+
+          volumeMounts:
+            - name: postgres-data
+              mountPath: /var/lib/postgresql/data
+
+      volumes:
+        - name: postgres-data
+          persistentVolumeClaim:
+            claimName: gameshelf-postgres-pvc

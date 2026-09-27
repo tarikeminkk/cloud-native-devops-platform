@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KubeDefender</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<div class="game-container">
+    <div class="header">
+        <h1>KUBEDEFENDER</h1>
+
+        <div class="stats">
+            <span>HEALTH: <b id="health">100</b></span>
+            <span>SCORE: <b id="score">0</b></span>
+        </div>
+    </div>
+
+    <canvas id="gameCanvas" width="1000" height="600"></canvas>
+
+    <div class="controls">
+        WASD — Move &nbsp; | &nbsp; Mouse — Aim &nbsp; | &nbsp; Left Click — Fire
+    </div>
+</div>
+
+<div id="gameOver" class="game-over hidden">
+    <h2>GAME OVER</h2>
+    <p>Score: <span id="finalScore">0</span></p>
+    <button onclick="location.reload()">PLAY AGAIN</button>
+</div>
+
+<script src="/static/game.js"></script>
+
+</body>
+</html>

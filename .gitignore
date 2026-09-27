@@ -5,3 +5,5 @@
 *.tfstate.*
 .venv/
 __pycache__/
+gameshelf/.venv/
+kubedefender/.venv/
