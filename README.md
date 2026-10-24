@@ -1,154 +1,146 @@
-# End-to-End DevOps Infrastructure & GitOps Platform
+# Cloud-Native DevOps & GitOps Platform
 
-A hands-on DevOps environment built on **Nutanix AHV-based private cloud infrastructure** to design and operate a complete software delivery, observability, and security monitoring workflow.
+A production-inspired cloud-native platform built on **Nutanix AHV private cloud infrastructure**, designed to demonstrate a complete DevOps workflow covering infrastructure automation, CI/CD, Kubernetes, GitOps, ingress networking, TLS management, observability, centralized logging, and hybrid cloud management.
 
-The environment integrates infrastructure automation, CI/CD, container image management, Kubernetes, GitOps-based deployment, metrics, alerting, centralized logging, and security monitoring.
+The platform integrates **Ansible, Jenkins, Harbor, Kubernetes, Argo CD, HPE Morpheus, NGINX Ingress, MetalLB, cert-manager, Prometheus, Grafana, Alertmanager, Loki, and Grafana Alloy** into a working end-to-end environment.
 
-The goal of this project is not to demonstrate individual tools in isolation, but to integrate them into a working end-to-end platform.
+Rather than demonstrating individual tools in isolation, this project focuses on how modern infrastructure and DevOps components interact as a complete platform.
+
+---
+
+## Platform Highlights
+
+- Kubernetes cluster running on **Nutanix AHV**
+- Infrastructure automation with **Ansible**
+- Automated CI pipeline with **Jenkins**
+- Private container registry with **Harbor**
+- GitOps-based continuous delivery with **Argo CD**
+- Kubernetes integration with **HPE Morpheus**
+- Bare-metal LoadBalancer implementation with **MetalLB**
+- Host-based application routing with **NGINX Ingress**
+- Automated TLS certificate management with **cert-manager**
+- Internal Certificate Authority for lab services
+- HTTPS access through `*.kubeops.local` endpoints
+- External VM service integration through Kubernetes networking
+- Infrastructure and Kubernetes monitoring with **Prometheus and Grafana**
+- Centralized logging with **Grafana Alloy and Loki**
+- Alert management with **Prometheus Alertmanager**
 
 ---
 
 ## Architecture
 
 ```text
-                              GitHub
-                                 │
-                                 ▼
-                              Jenkins
-                                 │
-                         Build Docker Image
-                                 │
-                                 ▼
-                               Harbor
-                         Private Registry
-                                 │
-                                 │
-                    Update Kubernetes Manifest
-                                 │
-                                 ▼
-                              GitHub
-                                 │
-                                 ▼
-                              Argo CD
-                                 │
-                                 ▼
-                         Kubernetes Cluster
-                      ┌──────────┴──────────┐
-                      │                     │
-                 Control Plane          Workers
-                                      demo-app
-                                          │
-                                          ▼
-                                       Service
-
-
-                       OBSERVABILITY
-
-              ┌──────────── Metrics ─────────────┐
-              │                                  │
-        Node Exporter                   kube-state-metrics
-              │                                  │
-              └──────────► Prometheus ◄──────────┘
-                               │
-                               ▼
-                            Grafana
-
-                         Alert Rules
-                               │
-                               ▼
-                         Alertmanager
-
-
-                 CENTRALIZED LOGGING
-
-        Linux Servers                Kubernetes Pods
-             │                             │
-             ▼                             ▼
-        Grafana Alloy                 Grafana Alloy
-             │                             │
-             └──────────────┬──────────────┘
-                            ▼
-                           Loki
-                            │
-                            ▼
-                         Grafana
-
-
-                  SECURITY MONITORING
-
-                      Linux Servers
-                           │
-                      Wazuh Agents
-                           │
-                           ▼
-                      Wazuh Manager
-                           │
-                           ▼
-                      Wazuh Indexer
-                           │
-                           ▼
-                     Wazuh Dashboard
+                         GitHub
+                            |
+                            v
+                         Jenkins
+                            |
+                    Build Docker Image
+                            |
+                            v
+                          Harbor
+                    Private Registry
+                            |
+                  Update Git Manifest
+                            |
+                            v
+                         GitHub
+                            |
+                            v
+                         Argo CD
+                            |
+                    GitOps Reconciliation
+                            |
+                            v
+               +-------------------------+
+               |    Kubernetes Cluster   |
+               |                         |
+               |  Control Plane          |
+               |  Worker 01              |
+               |  Worker 02              |
+               |                         |
+               |  NGINX Ingress          |
+               |  MetalLB                |
+               |  cert-manager           |
+               |  Morpheus Agent         |
+               +------------+------------+
+                            |
+                     192.168.5.240
+                      MetalLB VIP
+                            |
+               +------------+------------+
+               |                         |
+               v                         v
+     demo.kubeops.local       grafana.kubeops.local
+               |                         |
+               v                         v
+       Kubernetes Service       Kubernetes Service
+               |                         |
+               v                         v
+          demo-app Pods          External Endpoint
+                                         |
+                                         v
+                                  192.168.5.6:3000
+                                         |
+                                         v
+                                      Grafana
 ```
 
 ---
 
 ## Infrastructure
 
-The environment runs on Ubuntu Server virtual machines hosted on Nutanix AHV.
+The lab environment runs on **Nutanix AHV** and consists of dedicated virtual machines for CI/CD, Kubernetes, automation, monitoring, logging, and container registry services.
 
 | Host | IP Address | Role |
 |---|---|---|
 | `tarik-ci01` | `192.168.5.1` | Jenkins CI/CD |
 | `tarik-git01` | `192.168.5.2` | Git services |
-| `tarik-k8s-cp01` | `192.168.5.3` | Kubernetes control plane |
-| `tarik-k8s-wrk01` | `192.168.5.4` | Kubernetes worker |
-| `tarik-k8s-wrk02` | `192.168.5.5` | Kubernetes worker |
+| `tarik-k8s-cp01` | `192.168.5.3` | Kubernetes Control Plane |
+| `tarik-k8s-wrk01` | `192.168.5.4` | Kubernetes Worker |
+| `tarik-k8s-wrk02` | `192.168.5.5` | Kubernetes Worker |
 | `tarik-monitor01` | `192.168.5.6` | Prometheus, Grafana, Alertmanager |
-| `tarik-ops01` | `192.168.5.7` | Ansible control node |
-| `tarik-reg01` | `192.168.5.8` | Harbor container registry |
-| `tarik-log01` | `192.168.5.9` | Loki centralized logging |
-| `tarik-wazuh01` | `192.168.5.10` | Wazuh security monitoring |
+| `tarik-ops01` | `192.168.5.7` | Ansible / Management |
+| `tarik-reg01` | `192.168.5.8` | Harbor Container Registry |
+| `tarik-log01` | `192.168.5.9` | Loki Centralized Logging |
 
 ---
 
-## CI/CD and GitOps
+## CI/CD Pipeline
 
-Application delivery follows a GitOps workflow.
+The application delivery workflow follows a complete automated pipeline:
 
 ```text
 Developer
-   │
-   ▼
+   |
+   v
 GitHub
-   │
-   ▼
+   |
+   v
 Jenkins
-   │
-   ├── Validate automation
-   ├── Build Docker image
-   ├── Authenticate to Harbor
-   ├── Push versioned image
-   └── Update Kubernetes image tag in Git
-             │
-             ▼
-           GitHub
-             │
-             ▼
-           Argo CD
-             │
-             ▼
-         Kubernetes
+   |
+   +-- Validate automation
+   +-- Build Docker image
+   +-- Authenticate to Harbor
+   +-- Push versioned image
+   +-- Update Kubernetes manifest
+            |
+            v
+          GitHub
+            |
+            v
+          Argo CD
+            |
+            v
+        Kubernetes
 ```
 
-Jenkins is responsible for the CI portion of the workflow.
+Jenkins builds the application container image and pushes both versioned and `latest` tags to Harbor.
 
-When a code change is detected, Jenkins builds a new Docker image and pushes both versioned and latest tags to the private Harbor registry.
+After the image is published, Jenkins updates the Kubernetes deployment manifest in Git. Argo CD detects the Git change and automatically reconciles the desired state with the Kubernetes cluster.
 
-The pipeline then updates the image version in the Kubernetes deployment manifest and pushes the desired state back to Git.
-
-Argo CD monitors the Git repository and synchronizes the Kubernetes cluster with the desired state stored in Git.
-
-This keeps deployment responsibility outside Jenkins and makes Git the source of truth for the cluster state.
+This makes **Git the source of truth** for application deployment.
 
 ### Jenkins Pipeline
 
@@ -156,126 +148,350 @@ This keeps deployment responsibility outside Jenkins and makes Git the source of
 
 ---
 
-## Private Container Registry
+## Harbor Container Registry
 
-Harbor is used as the internal container image registry.
+A private **Harbor registry** is used to store application container images.
 
-Application images produced by Jenkins are stored as versioned artifacts before being pulled by Kubernetes.
+Example image path:
 
 ```text
-Jenkins
-   │
-   ▼
-harbor.kubeops.local
-   │
-   ├── demo-app:<build-number>
-   └── demo-app:latest
-         │
-         ▼
-     Kubernetes
+harbor.kubeops.local/kubeops/demo-app:<tag>
 ```
 
-Jenkins authenticates to Harbor using a dedicated robot account rather than a personal user account.
-
-### Harbor Registry
+The Kubernetes cluster authenticates against Harbor and pulls application images directly from the private registry.
 
 ![Harbor Registry](docs/images/harbor-registry.png)
 
 ---
 
-## Kubernetes
+## Kubernetes Cluster
 
-The Kubernetes environment consists of one control-plane node and two worker nodes.
+The Kubernetes environment consists of:
 
-The sample application runs with multiple replicas and is exposed through a Kubernetes Service.
+- 1 Control Plane node
+- 2 Worker nodes
+- `containerd` container runtime
+- Flannel CNI
+- Helm package management
 
-The application deployment includes:
-
-- Multiple pod replicas
-- Readiness probes
-- Liveness probes
-- Versioned container images
-- Private Harbor image pulls
-- GitOps-based deployment through Argo CD
-
-The container runtime is **containerd**.
-
----
-
-## Infrastructure Automation
-
-Ansible is used from the dedicated operations node to configure and maintain the Linux infrastructure.
-
-Automation covers tasks such as:
-
-- Base server configuration
-- Package installation
-- Common system configuration
-- Node Exporter deployment
-- Jenkins setup
-- Harbor setup
-- Kubernetes configuration
-- Monitoring configuration
-- Prometheus targets
-- Alertmanager
-- Loki
-- Grafana Alloy
-- Wazuh deployment
-- Wazuh agent deployment
-
-Current playbooks include:
+The cluster hosts the demo application and supporting workloads used throughout the platform.
 
 ```text
-ansible/playbooks/
-├── base-setup.yml
-├── ci-setup.yml
-├── registry-setup.yml
-├── harbor-setup.yml
-├── kubernetes-setup.yml
-├── kubernetes-cluster.yml
-├── kubernetes-harbor.yml
-├── monitoring-setup.yml
-├── node-exporter.yml
-├── prometheus-targets.yml
-├── alertmanager-setup.yml
-├── prometheus-alerts.yml
-├── loki-setup.yml
-├── alloy-setup.yml
-├── wazuh-setup.yml
-└── wazuh-agent.yml
+tarik-k8s-cp01
+      |
+      +----------------+
+      |                |
+      v                v
+tarik-k8s-wrk01   tarik-k8s-wrk02
 ```
 
 ---
 
-## Monitoring
+## GitOps with Argo CD
 
-Prometheus provides centralized metrics collection for the infrastructure and Kubernetes environment.
+**Argo CD** provides continuous delivery using GitOps principles.
 
-Metrics are collected from:
+```text
+Git Repository
+      |
+      v
+   Argo CD
+      |
+      v
+Kubernetes API
+      |
+      v
+Desired State
+```
 
-- Linux servers through Node Exporter
-- Kubernetes through kube-state-metrics
-- Infrastructure and workload targets configured in Prometheus
+The `kubeops-demo-app` application uses automated synchronization and self-healing.
 
-Grafana is used to visualize infrastructure and Kubernetes metrics.
+GitOps coverage includes:
 
-### Infrastructure Overview
+- Application manifests
+- Ingress resources
+- MetalLB configuration
+- TLS certificates
+- Certificate issuers
+- External service definitions
 
-![Infrastructure Dashboard](docs/images/grafana-infrastructure-dashboard.png)
+---
 
-### Node Metrics
+## Kubernetes Networking & Ingress
 
-![Node Dashboard](docs/images/grafana-node-dashboard.png)
+The platform uses **NGINX Ingress Controller** to provide centralized host-based access to services.
 
-### Kubernetes Metrics
+```text
+Client
+  |
+  v
+192.168.5.240
+  |
+  v
+MetalLB
+  |
+  v
+NGINX Ingress
+  |
+  +--> demo.kubeops.local
+  |         |
+  |         v
+  |    demo-app Service
+  |         |
+  |         v
+  |    demo-app Pods
+  |
+  +--> grafana.kubeops.local
+            |
+            v
+      grafana-external
+```
 
-![Kubernetes Dashboard](docs/images/grafana-kubernetes-dashboard.png)
+The NGINX Ingress Controller is exposed through a Kubernetes `LoadBalancer` service.
+
+---
+
+## MetalLB Load Balancing
+
+Because the Kubernetes cluster runs on private infrastructure rather than a public cloud provider, **MetalLB** provides LoadBalancer functionality.
+
+Configured address pool:
+
+```text
+192.168.5.240 - 192.168.5.250
+```
+
+The NGINX Ingress Controller receives:
+
+```text
+192.168.5.240
+```
+
+MetalLB operates in **Layer 2 mode**, providing LoadBalancer functionality for the private Kubernetes environment.
+
+---
+
+## TLS & Certificate Management
+
+**cert-manager** is deployed inside Kubernetes to automate certificate lifecycle management.
+
+The lab uses an internal Certificate Authority:
+
+```text
+Self-Signed Issuer
+        |
+        v
+     Lab Root CA
+        |
+        v
+  CA ClusterIssuer
+        |
+        +----------------+
+        |                |
+        v                v
+ demo-app TLS        Grafana TLS
+```
+
+Certificates are issued for:
+
+```text
+demo.kubeops.local
+grafana.kubeops.local
+```
+
+Certificates are stored as Kubernetes TLS secrets and referenced by Ingress resources, providing HTTPS access to lab services.
+
+---
+
+## Demo Application Access
+
+The demo application is exposed through NGINX Ingress using:
+
+```text
+https://demo.kubeops.local
+```
+
+Traffic flow:
+
+```text
+Client
+  |
+  v
+192.168.5.240
+  |
+  v
+NGINX Ingress
+  |
+  v
+demo-app Service
+  |
+  v
+demo-app Pods
+```
+
+TLS is managed by cert-manager using the internal lab CA.
+
+---
+
+## External Service Integration
+
+The platform demonstrates how a service running **outside Kubernetes** can be exposed through Kubernetes networking.
+
+Grafana runs directly on the monitoring VM:
+
+```text
+tarik-monitor01
+192.168.5.6:3000
+```
+
+It is exposed through:
+
+```text
+https://grafana.kubeops.local
+```
+
+Traffic flow:
+
+```text
+Client
+  |
+  v
+grafana.kubeops.local
+  |
+  v
+192.168.5.240
+  |
+  v
+NGINX Ingress
+  |
+  v
+grafana-external Service
+  |
+  v
+EndpointSlice
+  |
+  v
+192.168.5.6:3000
+  |
+  v
+Grafana
+```
+
+The selectorless Kubernetes Service is managed through GitOps, while the external backend is represented through an EndpointSlice.
+
+This allows Kubernetes to provide a unified ingress layer for both containerized applications and traditional VM-based services.
+
+---
+
+## HPE Morpheus Integration
+
+The Kubernetes cluster is integrated with **HPE Morpheus** as an External Kubernetes Cluster, extending the environment into a hybrid cloud management use case.
+
+Morpheus provides centralized visibility into cluster health, infrastructure resources, Kubernetes nodes, workloads, containers, services, storage, and resource utilization.
+
+### Cluster Overview
+
+The Kubernetes environment can be viewed and monitored through the Morpheus cluster interface.
+
+![HPE Morpheus Kubernetes Overview](docs/images/morph1.png)
+
+### Kubernetes Node Discovery
+
+Morpheus discovers the complete three-node Kubernetes topology:
+
+- 1 Control Plane
+- 2 Worker Nodes
+
+![HPE Morpheus Kubernetes Nodes](docs/images/morph2.png)
+
+### Workload Visibility
+
+Morpheus provides visibility into workloads running across the Kubernetes cluster, including Pods, Deployments, ReplicaSets, DaemonSets, StatefulSets, and Jobs.
+
+Platform workloads such as **Argo CD** and **Grafana Alloy** can also be inspected through the Morpheus interface.
+
+![HPE Morpheus Kubernetes Workloads](docs/images/morph3.png)
+
+---
+
+## Infrastructure Automation with Ansible
+
+**Ansible** is used to automate infrastructure configuration across the environment.
+
+Automation includes:
+
+- Base Linux configuration
+- CI server preparation
+- Harbor installation
+- Kubernetes installation and cluster configuration
+- Monitoring stack deployment
+- Node Exporter deployment
+- Prometheus target configuration
+- Alertmanager configuration
+- Prometheus alert rules
+- Loki installation
+- Grafana Alloy deployment
+- Persistent storage configuration
+
+Example playbooks:
+
+```text
+base-setup.yml
+ci-setup.yml
+registry-setup.yml
+harbor-setup.yml
+kubernetes-setup.yml
+kubernetes-cluster.yml
+kubernetes-harbor.yml
+monitoring-setup.yml
+node-exporter.yml
+prometheus-targets.yml
+alertmanager-setup.yml
+prometheus-alerts.yml
+loki-setup.yml
+alloy-setup.yml
+gameshelf-storage.yml
+```
+
+---
+
+## Monitoring & Observability
+
+The monitoring stack consists of:
+
+- **Prometheus**
+- **Node Exporter**
+- **kube-state-metrics**
+- **Grafana**
+- **Alertmanager**
+
+```text
+Linux Servers --> Node Exporter --------+
+                                        |
+Kubernetes --> kube-state-metrics ------+--> Prometheus --> Grafana
+                                        |
+                                        +--> Alertmanager
+```
+
+The dashboards provide visibility into CPU, memory, disk, network, node health, Kubernetes workloads, pod status, and cluster resources.
+
+### Infrastructure Dashboard
+
+![Grafana Infrastructure Dashboard](docs/images/grafana-infrastructure-dashboard.png)
+
+### Node Monitoring
+
+![Grafana Node Dashboard](docs/images/grafana-node-dashboard.png)
+
+### Kubernetes Monitoring
+
+![Grafana Kubernetes Dashboard](docs/images/grafana-kubernetes-dashboard.png)
 
 ---
 
 ## Alerting
 
-Prometheus alert rules and Alertmanager provide infrastructure and workload availability monitoring.
+Prometheus alert rules are used to detect infrastructure and Kubernetes failures.
 
 Implemented alerts include:
 
@@ -284,57 +500,62 @@ NodeDown
 KubernetesPodNotRunning
 ```
 
-`NodeDown` was tested by stopping Node Exporter on one of the monitored servers and verifying the complete alert lifecycle from Prometheus to Alertmanager and recovery.
+The `NodeDown` alert was tested by intentionally stopping Node Exporter on a monitored system.
 
-### NodeDown Test
+![Grafana Node Down Alert](docs/images/grafana-node-down-alert.png)
 
-![NodeDown Alert](docs/images/grafana-node-down-alert.png)
+```text
+Target Failure
+      |
+      v
+  Prometheus
+      |
+      v
+ Alert Rule
+      |
+      v
+ Alertmanager
+```
 
 ---
 
 ## Centralized Logging
 
-Centralized logging is implemented using **Grafana Alloy, Loki, and Grafana**.
+Centralized logging is implemented using **Grafana Alloy and Loki**.
 
-Two different log sources are collected.
-
-### Linux System Logs
-
-Grafana Alloy runs on the Linux servers and reads logs from the systemd journal.
+### Linux Log Flow
 
 ```text
-Linux Server
-     │
-     ▼
-systemd journal
-     │
-     ▼
-Grafana Alloy
-     │
-     ▼
-Loki
-     │
-     ▼
-Grafana
+Linux systemd journal
+        |
+        v
+   Grafana Alloy
+        |
+        v
+       Loki
+        |
+        v
+      Grafana
 ```
 
-Logs can be filtered by host and other labels from Grafana Explore.
+![Grafana Linux Logs](docs/images/grafana-linux-logs.png)
 
-Example:
+### Kubernetes Log Flow
 
-```logql
-{hostname="tarik-git01"}
+```text
+Kubernetes Pods
+      |
+      v
+ Grafana Alloy
+      |
+      v
+     Loki
+      |
+      v
+ Grafana Explore
 ```
 
-![Linux Logs](docs/images/grafana-linux-logs.png)
-
-### Kubernetes Application Logs
-
-A dedicated Grafana Alloy instance runs inside Kubernetes and discovers workloads through the Kubernetes API.
-
-Pod logs are enriched with Kubernetes metadata before being forwarded to Loki.
-
-Available labels include:
+Kubernetes logs include labels such as:
 
 ```text
 cluster
@@ -344,32 +565,9 @@ container
 app
 ```
 
-This makes it possible to isolate logs for a specific workload directly from Grafana.
+![Grafana Kubernetes Logs](docs/images/grafana-kubernetes-logs.png)
 
-Example:
-
-```logql
-{namespace="default", container="demo-app"}
-```
-
-![Kubernetes Application Logs](docs/images/grafana-kubernetes-logs.png)
-
-The logging pipeline is:
-
-```text
-Kubernetes Pods
-      │
-      ▼
-Grafana Alloy
-      │
-      ▼
-Loki
-      │
-      ▼
-Grafana Explore
-```
-
-Loki runs on the dedicated logging server and stores its local TSDB, WAL, chunks, and related data under:
+Loki data is persisted under:
 
 ```text
 /var/lib/loki
@@ -377,218 +575,153 @@ Loki runs on the dedicated logging server and stores its local TSDB, WAL, chunks
 
 ---
 
-## Security Monitoring
-
-Security monitoring is implemented using **Wazuh**.
-
-A dedicated Wazuh server provides centralized security event analysis, endpoint monitoring, File Integrity Monitoring, and Security Configuration Assessment for the Linux infrastructure.
-
-```text
-Linux Servers
-      │
-      │ Wazuh Agent
-      ▼
-tarik-wazuh01
-      │
-      ├── Wazuh Manager
-      ├── Wazuh Indexer
-      └── Wazuh Dashboard
-```
-
-Wazuh agents are deployed and managed across the infrastructure using Ansible.
-
-### Endpoint Monitoring
-
-Eight Linux servers are connected to the Wazuh manager and centrally monitored from the Wazuh Dashboard.
-
-![Wazuh Endpoints](docs/images/wazuh-endpoints.png)
-
-### SSH Authentication Detection
-
-A controlled SSH authentication test was performed against `tarik-git01`.
-
-Wazuh detected and correlated:
-
-- Authentication attempts using a non-existent user
-- PAM authentication failures
-- Repeated password failures
-- Security alerts generated from repeated authentication failures
-
-![Wazuh SSH Detection](docs/images/wazuh-ssh-detection.png)
-
-### File Integrity Monitoring
-
-Wazuh File Integrity Monitoring was tested by modifying a monitored file under `/etc`.
-
-The agent detected the change in real time and generated an integrity checksum alert.
-
-```text
-/etc/wazuh-fim-test.conf
-        │
-        ▼
-   File Modified
-        │
-        ▼
-   Wazuh Agent
-        │
-        ▼
- Integrity Alert
-```
-
-![Wazuh File Integrity Monitoring](docs/images/wazuh-file-integrity-monitoring.png)
-
-### Security Configuration Assessment
-
-Wazuh Security Configuration Assessment is used to evaluate Linux hosts against the **CIS Ubuntu Linux 24.04 LTS Benchmark**.
-
-The assessment provides visibility into passed, failed, and non-applicable security controls and can be used to identify potential system-hardening improvements.
-
-![Wazuh CIS Assessment](docs/images/wazuh-cis-assessment.png)
-
----
-
 ## Repository Structure
 
 ```text
-.
-├── ansible/
-│   ├── inventory
-│   ├── ansible.cfg
-│   └── playbooks/
-│       ├── base-setup.yml
-│       ├── ci-setup.yml
-│       ├── registry-setup.yml
-│       ├── harbor-setup.yml
-│       ├── kubernetes-setup.yml
-│       ├── kubernetes-cluster.yml
-│       ├── kubernetes-harbor.yml
-│       ├── monitoring-setup.yml
-│       ├── node-exporter.yml
-│       ├── prometheus-targets.yml
-│       ├── alertmanager-setup.yml
-│       ├── prometheus-alerts.yml
-│       ├── loki-setup.yml
-│       ├── alloy-setup.yml
-│       ├── wazuh-setup.yml
-│       └── wazuh-agent.yml
-│
-├── app/
-│
-├── kubernetes/
-│   ├── deployment.yaml
-│   ├── service.yaml
-│   └── alloy-logs.yaml
-│
-├── docs/
-│   └── images/
-│       ├── jenkins-pipeline.png
-│       ├── harbor-registry.png
-│       ├── grafana-infrastructure-dashboard.png
-│       ├── grafana-node-dashboard.png
-│       ├── grafana-kubernetes-dashboard.png
-│       ├── grafana-node-down-alert.png
-│       ├── grafana-linux-logs.png
-│       ├── grafana-kubernetes-logs.png
-│       ├── wazuh-endpoints.png
-│       ├── wazuh-ssh-detection.png
-│       ├── wazuh-file-integrity-monitoring.png
-│       └── wazuh-cis-assessment.png
-│
-├── Jenkinsfile
-└── README.md
+cloud-native-devops-platform/
+|
++-- ansible/
+|   +-- ansible.cfg
+|   +-- inventory
+|   +-- playbooks/
+|
++-- app/
+|   +-- Dockerfile
+|   +-- index.html
+|
++-- docs/
+|   +-- images/
+|
++-- kubernetes/
+|   +-- deployment.yaml
+|   +-- service.yaml
+|   +-- demo-app-ingress.yaml
+|   +-- demo-app-certificate.yaml
+|   +-- metallb-pool.yaml
+|   +-- selfsigned-issuer.yaml
+|   +-- lab-ca.yaml
+|   +-- lab-ca-issuer.yaml
+|   +-- grafana-external.yaml
+|   +-- grafana-certificate.yaml
+|   +-- grafana-ingress.yaml
+|   +-- alloy-logs.yaml
+|   +-- gameshelf-postgres.yaml
+|   +-- gameshelf-storage.yaml
+|
++-- kubedefender/
+|
++-- Jenkinsfile
++-- README.md
 ```
 
 ---
 
 ## Technology Stack
 
-| Area | Technologies |
+| Category | Technology |
 |---|---|
-| Virtualization | Nutanix AHV |
+| Private Cloud / Virtualization | Nutanix AHV |
 | Operating System | Ubuntu Server |
-| Configuration Management | Ansible |
-| Source Control | Git, GitHub |
-| CI | Jenkins |
+| Infrastructure Automation | Ansible |
+| Source Control | Git / GitHub |
+| Continuous Integration | Jenkins |
 | Containers | Docker |
 | Container Registry | Harbor |
 | Container Runtime | containerd |
-| Orchestration | Kubernetes |
-| GitOps / CD | Argo CD |
-| Metrics | Prometheus, Node Exporter, kube-state-metrics |
+| Container Orchestration | Kubernetes |
+| GitOps / Continuous Delivery | Argo CD |
+| Cloud Management | HPE Morpheus |
+| Ingress | NGINX Ingress Controller |
+| Load Balancing | MetalLB |
+| TLS / PKI | cert-manager / Internal CA |
+| Metrics | Prometheus |
+| Host Metrics | Node Exporter |
+| Kubernetes Metrics | kube-state-metrics |
 | Visualization | Grafana |
 | Alerting | Alertmanager |
-| Logging | Loki, Grafana Alloy |
-| Security Monitoring | Wazuh |
+| Centralized Logging | Loki |
+| Log Collection | Grafana Alloy |
 
 ---
 
-## What This Project Covers
+## End-to-End Delivery Flow
 
-This environment demonstrates practical implementation of:
-
-- Linux infrastructure administration
-- Infrastructure automation with Ansible
-- CI pipeline design
-- Docker image lifecycle management
-- Private container registry integration
-- Kubernetes cluster operations
-- GitOps deployment practices
-- Infrastructure and Kubernetes monitoring
-- Prometheus alerting
-- Centralized Linux logging
-- Kubernetes application logging
-- Centralized endpoint security monitoring
-- SSH authentication event detection
-- File Integrity Monitoring
-- CIS-based Security Configuration Assessment
-- Automated security agent deployment with Ansible
-- End-to-end integration between DevOps, observability, and security tooling
+```text
+Code Change
+    |
+    v
+  GitHub
+    |
+    v
+ Jenkins
+    |
+    +--> Build
+    +--> Containerize
+    +--> Push Image
+            |
+            v
+          Harbor
+            |
+            v
+ Update Git Manifest
+            |
+            v
+          GitHub
+            |
+            v
+          Argo CD
+            |
+            v
+       Kubernetes
+            |
+            v
+       NGINX Ingress
+            |
+            v
+          HTTPS
+```
 
 ---
 
-## Current Delivery Flow
+## Observability Flow
 
 ```text
-GitHub
-   ↓
-Jenkins
-   ↓
-Docker Build
-   ↓
-Harbor
-   ↓
-Git Manifest Update
-   ↓
-GitHub
-   ↓
-Argo CD
-   ↓
-Kubernetes
+Infrastructure
+     |
+     +--> Node Exporter -----------+
+     |                             |
+Kubernetes --> kube-state-metrics -+--> Prometheus
+     |                             |        |
+     |                             |        +--> Grafana
+     |                             |
+     |                             +--------+--> Alertmanager
+     |
+     +--> Grafana Alloy --> Loki ---------> Grafana
 ```
 
-## Current Observability Flow
+HPE Morpheus provides an additional management and visibility layer over the Kubernetes cluster.
 
-```text
-Metrics:
-Linux / Kubernetes → Prometheus → Grafana
+---
 
-Logs:
-Linux / Kubernetes → Grafana Alloy → Loki → Grafana
+## What This Project Demonstrates
 
-Alerts:
-Prometheus → Alertmanager
-```
+This project demonstrates practical experience across the complete infrastructure and application delivery lifecycle:
 
-## Current Security Monitoring Flow
+- Designing and operating Kubernetes on private cloud infrastructure
+- Automating infrastructure configuration with Ansible
+- Building CI workflows with Jenkins
+- Managing private container images with Harbor
+- Implementing GitOps-based continuous delivery with Argo CD
+- Integrating Kubernetes with HPE Morpheus
+- Implementing LoadBalancer services with MetalLB
+- Configuring centralized ingress routing with NGINX
+- Managing TLS certificates with cert-manager
+- Building an internal PKI workflow for lab services
+- Routing Kubernetes traffic to external VM-based services
+- Monitoring Linux and Kubernetes infrastructure with Prometheus
+- Building operational dashboards with Grafana
+- Implementing infrastructure and workload alerting
+- Collecting centralized Linux and Kubernetes logs with Alloy and Loki
 
-```text
-Linux Servers
-      ↓
-Wazuh Agents
-      ↓
-Wazuh Manager
-      ↓
-Wazuh Indexer
-      ↓
-Wazuh Dashboard
-```
+The result is an integrated cloud-native platform where infrastructure automation, application delivery, networking, TLS, observability, and cloud management operate together as a single environment.
+
