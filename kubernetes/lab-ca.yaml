@@ -1,0 +1,16 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: lab-ca
+  namespace: cert-manager
+spec:
+  isCA: true
+  commonName: lab-ca
+  secretName: lab-ca-secret
+  duration: 87600h
+  privateKey:
+    algorithm: RSA
+    size: 2048
+  issuerRef:
+    name: selfsigned-issuer
+    kind: ClusterIssuer
